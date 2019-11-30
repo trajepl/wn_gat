@@ -88,10 +88,11 @@ class GATConv(MessagePassing):
 
 
 class NEGLoss(nn.Module):
-    def __init__(self, num_negative_samples: int = 5):
+    def __init__(self, x: torch.FloatTensor, edge_index: torch.LongTensor, num_negative_samples: int = 5):
         super(NEGLoss, self).__init__()
         self.num_negative_samples = num_negative_samples
         self.bce_loss_with_logits = nn.BCEWithLogitsLoss()
+        self.neg_edge_index = self.sample(edge_index, x.size(0))
 
     def sample(self, edge_index: torch.LongTensor, num_nodes: int) -> torch.LongTensor:
         neg_edge_index = []
@@ -101,8 +102,7 @@ class NEGLoss(nn.Module):
         return torch.LongTensor(neg_edge_index)
 
     def forward(self, x: torch.FloatTensor, edge_index: torch.LongTensor) -> float:
-        neg_edge_index = self.sample(edge_index, x.size(0))
-
+        neg_edge_index = self.neg_edge_index
         v_i = x[edge_index[0]]
         nei_v_i = x[edge_index[1]]
         aff = torch.sum(v_i.mul(nei_v_i), dim=1, dtype=torch.float)

@@ -16,7 +16,7 @@ class WNGat(nn.Module):
             concat: bool = True,
             negative_slope: float = 0.2,
             dropout: float = 0.,
-            use_checkpoint: bool = True,
+            use_checkpoint: bool = False,
             **kwargs
     ) -> None:
         super(WNGat, self).__init__()
@@ -27,6 +27,7 @@ class WNGat(nn.Module):
 
     def forward(self, inp, edge_index, size=None):
         if self.use_checkpoint:
+            inp = torch.autograd.Variable(inp, requires_grad=True)
             h1 = F.elu(checkpoint(self.conv1, inp, edge_index))
             h2 = F.elu(checkpoint(self.conv2, h1, edge_index))
             oup = F.elu(checkpoint(self.conv3, h2, edge_index))
