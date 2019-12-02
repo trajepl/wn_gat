@@ -15,30 +15,32 @@ from torch.autograd import Variable
 from torch_geometric.data import Data
 from torch_geometric.datasets import Planetoid
 
-from models import NEGLoss, WNGat
+from models import WNGat, WNNode2vec
 from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
 parser.add_argument('--no-cuda', action='store_true',
-                    default=True, help='Disables CUDA training.')
+                    default=False, help='Disables CUDA training.')
 parser.add_argument('--resume', action='store_true',
                     default=False, help='Resume training from saved model.')
 parser.add_argument('--data', type=str,
                     default='./data/wn_graph', help='Graph data path.')
 parser.add_argument('--checkpoint_path', type=str,
                     default='', help='Checkpoint path for resuming.')
-parser.add_argument('--model', type=str, default='gat',
+parser.add_argument('--model', type=str, default='node2vec',
                     help='Gnn model.')
+parser.add_argument('--batch_size', type=int, default=128,
+                    help='Batch size for some model such as Node2vec, GraphSage.')
 parser.add_argument('--seed', type=int, default=2019, help='Random seed.')
-parser.add_argument('--epochs', type=int, default=10000,
+parser.add_argument('--epochs', type=int, default=1000,
                     help='Number of epochs to train.')
-parser.add_argument('--lr', type=float, default=0.005,
+parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
-parser.add_argument('--weight_decay', type=float, default=5e-4,
+parser.add_argument('--weight_decay', type=float, default=0,
                     help='Weight decay (L2 loss on parameters).')
 parser.add_argument('--hidden', type=int, default=256,
                     help='Hidden channels.')
-parser.add_argument('--output', type=int, default=256,
+parser.add_argument('--output', type=int, default=128,
                     help='Output channels.')
 parser.add_argument('--n_samples', type=int, default=5,
                     help='Number of negitive sampling.')
@@ -62,6 +64,7 @@ data = dataset[0]
 # data = Data(x=x, edge_index=edge_index)
 
 data = data.to(device)
+params = {}
 
 if args.model == 'gat':
     model = WNGat(data.num_node_features,
@@ -70,9 +73,17 @@ if args.model == 'gat':
                   heads=args.n_heads,
                   dropout=args.dropout,
                   use_checkpoint=False).to(device)
+elif args.model == 'node2vec':
+    model = WNNode2vec(data.num_nodes,
+                     embedding_dim=args.output,
+                     walk_length=20,
+                     context_size=10,
+                     walks_per_node=10)
+    params['batch_size'] = args.batch_size
 else:
     pass
 
+model = model.to(device)
 optimizer = torch.optim.Adam(
     model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
@@ -85,31 +96,5 @@ if args.resume:
     epoch_start = ckp['epoch']
     loss_list = ckp['loss_list']
 
-train_time = time.time()
-print(model)
-
-model.train()
-negloss = NEGLoss(data.x, data.edge_index, args.n_samples)
-for epoch in range(epoch_start, epoch_start+args.epochs):
-    optimizer.zero_grad()
-    out = model(data.x, data.edge_index)
-    loss = negloss(out, data.edge_index)
-    loss_list.append(loss.data)
-    loss.backward()
-    optimizer.step()
-
-    print(f'Train Epoch: {epoch} \t loss: {loss.data}')
-    if epoch > 0 and (epoch + 1) % 2 == 0:
-        prefix_sav = f'./model_save/{train_time}'
-        if not os.path.exists(prefix_sav):
-            os.makedirs(prefix_sav)
-
-        state_dict = {
-            'epoch': epoch+1,
-            'loss_list': loss_list,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-        }
-        torch.save(state_dict, f'{prefix_sav}/{args.model}_{epoch+1}.m5')
-
-torch.save(out.data, f'{prefix_sav}/{args.model}_out.emb')
+model.train(epoch_start, args.epochs+epoch_start,
+            data, 5, optimizer, device, **params)
