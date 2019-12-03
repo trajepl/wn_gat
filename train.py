@@ -20,7 +20,7 @@ from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
 parser.add_argument('--no-cuda', action='store_true',
-                    default=False, help='Disables CUDA training.')
+                    default=True, help='Disables CUDA training.')
 parser.add_argument('--resume', action='store_true',
                     default=False, help='Resume training from saved model.')
 parser.add_argument('--data', type=str,
@@ -74,11 +74,12 @@ if args.model == 'gat':
                   dropout=args.dropout,
                   use_checkpoint=False).to(device)
 elif args.model == 'node2vec':
-    model = WNNode2vec(data.num_nodes,
+    model = WNNode2vec(data,
                      embedding_dim=args.output,
                      walk_length=20,
                      context_size=10,
-                     walks_per_node=10)
+                     walks_per_node=10,
+                     is_paraller=True)
     params['batch_size'] = args.batch_size
 else:
     pass

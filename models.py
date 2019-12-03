@@ -5,12 +5,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader
 import torch_geometric
-from torch_geometric.nn import Node2Vec, SAGEConv
 from torch.utils.checkpoint import checkpoint
+from torch.utils.data import DataLoader
+from torch_geometric.data import Data
+from torch_geometric.nn import Node2Vec, SAGEConv
 
 from layer import GATConv, NEGLoss
+from rw import RandomWalk
+
+EPS = 1e-15
 
 
 def save_model(epoch, model, optimizer, loss_list, prefix_sav) -> None:
@@ -86,6 +90,58 @@ class WNGat(nn.Module):
 
 
 class WNNode2vec(Node2Vec):
+    def __init__(self, data, embedding_dim, walk_length, context_size,
+                 walks_per_node=1, p=1, q=1, num_negative_samples=None,
+                 is_paraller=False):
+        super(WNNode2vec, self).__init__(data.num_nodes, embedding_dim,
+                                         walk_length, context_size, walks_per_node, p, q, num_negative_samples)
+        self.random_walk = RandomWalk(data, is_paraller=is_paraller)
+
+    def loss(self, edge_index, edge_weight=None, subset=None):
+        r"""Computes the loss for the nodes in :obj:`subset` with negative
+        sampling."""
+        walk = self.__random_walk__(
+            edge_index, edge_weight=edge_weight, subset=subset)
+        start, rest = walk[:, 0], walk[:, 1:].contiguous()
+
+        h_start = self.embedding(start).view(
+            walk.size(0), 1, self.embedding_dim)
+        h_rest = self.embedding(rest.view(-1)).view(
+            walk.size(0), rest.size(1), self.embedding_dim)
+
+        out = (h_start * h_rest).sum(dim=-1).view(-1)
+        pos_loss = -torch.log(torch.sigmoid(out) + EPS).mean()
+
+        # Negative sampling loss.
+        num_negative_samples = self.num_negative_samples
+        if num_negative_samples is None:
+            num_negative_samples = rest.size(1)
+
+        neg_sample = torch.randint(self.num_nodes,
+                                   (walk.size(0), num_negative_samples),
+                                   dtype=torch.long, device=edge_index.device)
+        h_neg_rest = self.embedding(neg_sample)
+
+        out = (h_start * h_neg_rest).sum(dim=-1).view(-1)
+        neg_loss = -torch.log(1 - torch.sigmoid(out) + EPS).mean()
+
+        return pos_loss + neg_loss
+
+    def __random_walk__(self, edge_index, edge_weight=None, subset=None):
+        if subset is None:
+            subset = torch.arange(self.num_nodes, device=edge_index.device)
+        subset = subset.repeat(self.walks_per_node)
+
+        data = Data(x=None, edge_index=edge_index)
+        rw = self.random_walk.walk(
+            subset, walk_length=self.walk_length, p=self.p, q=self.q)
+
+        walks = []
+        num_walks_per_rw = 1 + self.walk_length + 1 - self.context_size
+        for j in range(num_walks_per_rw):
+            walks.append(rw[:, j:j + self.context_size])
+        return torch.cat(walks, dim=0)
+
     def train(self,
               epoch_s: int,
               epoch_e: int,
@@ -109,7 +165,7 @@ class WNNode2vec(Node2Vec):
             total_loss = 0
             for subset in loader:
                 optimizer.zero_grad()
-                loss = super().loss(data.edge_index, subset.to(device))
+                loss = self.loss(data.edge_index, subset=subset.to(device))
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
@@ -129,37 +185,3 @@ class WNNode2vec(Node2Vec):
                            z[data.test_mask], data.y[data.test_mask], max_iter=150)
         return acc
     '''
-
-
-# class WNGraphSage(nn.Module):
-#     def train(self,
-#               epoch_s: int,
-#               epoch_e: int,
-#               data: torch_geometric.data.Data,
-#               n_samples: int,
-#               optimizer: torch.optim,
-#               device: str,
-#               mode: bool = True,
-#               batch_size: int = 256) -> None:
-        
-#         loader = DataLoader(torch.arange(data.num_nodes),
-#                             batch_size=batch_size,
-#                             shuffle=True)
-
-#         train_time = time.time()
-#         prefix_sav = f'./model_save/WNGat_{train_time}'
-#         loss_list = []
-
-#         for epoch in range(epoch_s, epoch_e):
-#             super().train()
-#             total_loss = 0
-#             for subset in loader:
-#                 optimizer.zero_grad()
-#                 loss = super().loss(data.edge_index, subset.to(device))
-#                 loss.backward()
-#                 optimizer.step()
-#                 total_loss += loss.item()
-#             rls_loss = total_loss / len(loader)
-#             loss_list.append(rls_loss)
-#             print('Epoch: {:02d}, Loss: {:.4f}'.format(epoch, total_loss))
-#             save_model(epoch, self, optimizer, loss_list, prefix_sav)
