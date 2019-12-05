@@ -23,6 +23,8 @@ parser.add_argument('--no-cuda', action='store_true',
                     default=True, help='Disables CUDA training.')
 parser.add_argument('--resume', action='store_true',
                     default=False, help='Resume training from saved model.')
+parser.add_argument('--is_parallel', action='store_true',
+                    default=False, help='Resume training from saved model.')
 parser.add_argument('--data', type=str,
                     default='./data/wn_graph', help='Graph data path.')
 parser.add_argument('--checkpoint_path', type=str,
@@ -55,13 +57,13 @@ args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 device = torch.device('cuda' if args.cuda else 'cpu')
 
-dataset = Planetoid(root='/tmp/Cora', name='Cora')
-data = dataset[0]
+# dataset = Planetoid(root='/tmp/Cora', name='Cora')
+# data = dataset[0]
 
-# x, x_i, x_j = load_data(args.data)
-# edge_index = torch.tensor([x_i, x_j], dtype=torch.long)
-# x = torch.tensor(x, dtype=torch.float)
-# data = Data(x=x, edge_index=edge_index)
+x, x_i, x_j = load_data(args.data)
+edge_index = torch.tensor([x_i, x_j], dtype=torch.long)
+x = torch.tensor(x, dtype=torch.float)
+data = Data(x=x, edge_index=edge_index)
 
 data = data.to(device)
 params = {}
@@ -79,7 +81,7 @@ elif args.model == 'node2vec':
                      walk_length=20,
                      context_size=10,
                      walks_per_node=10,
-                     is_paraller=True)
+                     is_parallel=args.is_parallel)
     params['batch_size'] = args.batch_size
 else:
     pass

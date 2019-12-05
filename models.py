@@ -92,10 +92,10 @@ class WNGat(nn.Module):
 class WNNode2vec(Node2Vec):
     def __init__(self, data, embedding_dim, walk_length, context_size,
                  walks_per_node=1, p=1, q=1, num_negative_samples=None,
-                 is_paraller=False):
+                 is_parallel=False):
         super(WNNode2vec, self).__init__(data.num_nodes, embedding_dim,
                                          walk_length, context_size, walks_per_node, p, q, num_negative_samples)
-        self.random_walk = RandomWalk(data, is_paraller=is_paraller)
+        self.random_walk = RandomWalk(data, is_parallel=is_parallel)
 
     def loss(self, edge_index, edge_weight=None, subset=None):
         r"""Computes the loss for the nodes in :obj:`subset` with negative

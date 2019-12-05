@@ -22,7 +22,7 @@ class ParallerParser(object):
         for i in range(0, self.total, self.step):
             rls.append(pool.apply_async(
                 func=self.parser,
-                args=(i, i+self.step),
+                args=(i, min(i+self.step, self.total)),
                 kwds=self.kwargs
             ))
         pool.close()

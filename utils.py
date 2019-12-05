@@ -11,7 +11,7 @@ ANTONYMS = 'antonyms.txt'
 HYPERNYMS = 'hypernyms.txt'
 HYPONYMS = 'hyponyms.txt'
 SYNONYMS = 'synonyms.txt'
-DICTIONARY = './data/dictionary'
+DICTIONARY = './data/dictionary_1w'
 GLOVE_VEC = '/home/trajep/Workspace/pando/data/embedding/glove/glove.6B.300d.txt'
 
 

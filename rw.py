@@ -8,9 +8,9 @@ from paraller import ParallerParser
 
 class RandomWalk(object):
     def __init__(self, data: Data, edge_weight: torch.FloatTensor = None,
-                 is_sorted: bool = False, is_paraller: bool = True):
+                 is_sorted: bool = False, is_parallel: bool = True):
         self.is_unweighted = True
-        self.is_paraller = is_paraller
+        self.is_parallel = is_parallel
 
         if not is_sorted:
             edge_list = data.edge_index.tolist()
@@ -43,7 +43,7 @@ class RandomWalk(object):
 
     def _sample(self, ll, rr, start: torch.LongTensor, walk_length: int = 20,
                 p: float = 1.0, q: float = 1.0, out: torch.LongTensor = None):
-        out = torch.full((start.size(0), walk_length+1), -1, dtype=torch.long)
+        out = torch.full((start.size(0), walk_length+1), 0, dtype=torch.long) # full tensor with 0(_end flag)
         for n in range(ll, rr):
             cur = start[n]
             out[n, 0] = cur
@@ -80,7 +80,7 @@ class RandomWalk(object):
              p: float = 1.0, q: float = 1.0) -> torch.LongTensor:
         out = None
 
-        if self.is_paraller:
+        if self.is_parallel:
             paraller = ParallerParser(total=start.size(0),
                                       start=start, walk_length=walk_length, p=p, q=q)
             paraller.parser = self._sample
