@@ -1,5 +1,6 @@
 # node2vec
-python train.py --model node2vec \
+python train.py --no_cuda \
+                --model node2vec \
                 --batch_size 256 \
                 --epochs 1000 \
                 --lr 0.01 \
@@ -9,9 +10,11 @@ python train.py --model node2vec \
                 --context_size 10 \
                 --walks_per_node 10 \
                 --is_parallel \
+                1>node2vec_log.txt 2>&1 &
 
 # gat
-python train.py --model gat \
+python train.py --no_cuda \
+                --model gat \
                 --epochs 1000 \
                 --lr 0.01 \
                 --weight_decay 0 \
@@ -19,7 +22,7 @@ python train.py --model gat \
                 --hidden 256 \
                 --n_samples 5 \
                 --n_heads 8 \
-                --droupout 0.6 \
+                --dropout 0.6 \
                 --alpha 0.2 \
-
+                1>gat_log.txt 2>&1 &
 

@@ -19,8 +19,8 @@ from models import WNGat, WNNode2vec
 from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
-parser.add_argument('--no-cuda', action='store_true',
-                    default=True, help='Disables CUDA training.')
+parser.add_argument('--no_cuda', action='store_true',
+                    default=False, help='Disables CUDA training.')
 parser.add_argument('--resume', action='store_true',
                     default=False, help='Resume training from saved model.')
 parser.add_argument('--is_parallel', action='store_true',
@@ -85,7 +85,7 @@ elif args.model == 'node2vec':
     model = WNNode2vec(data,
                      embedding_dim=args.output,
                      walk_length=args.walk_length,
-                     context_size=args.contest_size,
+                     context_size=args.context_size,
                      walks_per_node=args.walks_per_node,
                      is_parallel=args.is_parallel)
     params['batch_size'] = args.batch_size
