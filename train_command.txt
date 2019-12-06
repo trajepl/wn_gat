@@ -1,0 +1,25 @@
+# node2vec
+python train.py --model node2vec \
+                --batch_size 256 \
+                --epochs 1000 \
+                --lr 0.01 \
+                --weight_decay 0 \
+                --output 256 \
+                --walk_length 20 \
+                --context_size 10 \
+                --walks_per_node 10 \
+                --is_parallel \
+
+# gat
+python train.py --model gat \
+                --epochs 1000 \
+                --lr 0.01 \
+                --weight_decay 0 \
+                --output 256 \
+                --hidden 256 \
+                --n_samples 5 \
+                --n_heads 8 \
+                --droupout 0.6 \
+                --alpha 0.2 \
+
+

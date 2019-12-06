@@ -52,6 +52,12 @@ parser.add_argument('--dropout', type=float, default=0.6,
                     help='Dropout rate (1 - keep probability).')
 parser.add_argument('--alpha', type=float, default=0.2,
                     help='Alpha for the leaky_relu.')
+parser.add_argument('--walk_length', type=int, default=20,
+                    help='Number of head attentions.')
+parser.add_argument('--context_size', type=int, default=10,
+                    help='Number of head attentions.')
+parser.add_argument('--walks_per_node', type=int, default=10,
+                    help='Number of head attentions.')
 
 args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
@@ -78,9 +84,9 @@ if args.model == 'gat':
 elif args.model == 'node2vec':
     model = WNNode2vec(data,
                      embedding_dim=args.output,
-                     walk_length=20,
-                     context_size=10,
-                     walks_per_node=10,
+                     walk_length=args.walk_length,
+                     context_size=args.contest_size,
+                     walks_per_node=args.walks_per_node,
                      is_parallel=args.is_parallel)
     params['batch_size'] = args.batch_size
 else:
@@ -100,4 +106,4 @@ if args.resume:
     loss_list = ckp['loss_list']
 
 model.train(epoch_start, args.epochs+epoch_start,
-            data, 5, optimizer, device, **params)
+            data, args.n_samples, optimizer, device, **params)
