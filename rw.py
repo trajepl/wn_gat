@@ -43,8 +43,9 @@ class RandomWalk(object):
 
     def _sample(self, ll, rr, start: torch.LongTensor, walk_length: int = 20,
                 p: float = 1.0, q: float = 1.0, out: torch.LongTensor = None):
-        out = torch.full((start.size(0), walk_length+1), 0, dtype=torch.long) # full tensor with 0(_end flag)
-        for n in range(ll, rr):
+        # full tensor with 0(_end flag)
+        out = torch.full((rr-ll, walk_length+1), 0, dtype=torch.long)
+        for n in range(0, rr-ll):
             cur = start[n]
             out[n, 0] = cur
 
@@ -74,7 +75,7 @@ class RandomWalk(object):
                 out[n, l] = cur
             if not self.is_unweighted:
                 del cur_edge_weight
-        return out[ll:rr]
+        return out
 
     def walk(self, start: torch.LongTensor, walk_length: int = 20,
              p: float = 1.0, q: float = 1.0) -> torch.LongTensor:
@@ -94,38 +95,6 @@ class RandomWalk(object):
                                walk_length=walk_length, p=p, q=q)
         return out
 
-        # for n in range(start.size(0)):
-        #     cur = start[n]
-        #     out[n, 0] = cur
-
-        #     for l in range(1, walk_length+1):
-        #         cur_neighbor, cur_edge_weight = self._get_neighbors(cur)
-        #         if cur_neighbor.size(0) == 0:
-        #             break
-        #         if self.is_unweighted:
-        #             cur = random.choice(cur_neighbor.tolist())
-        #         else:
-        #             # update edge_weight following p/q
-        #             if l > 1:
-        #                 prev_cur = out[n, l-2]
-        #                 for idx, item in enumerate(cur_neighbor):
-        #                     if item == prev_cur:
-        #                         cur_edge_weight[idx] /= p
-        #                     else:
-        #                         prev_cur_neighbor, prev_cur_edge_weight = self._get_neighbors(
-        #                             prev_cur)
-        #                         if item in prev_cur_neighbor:
-        #                             continue
-        #                         else:
-        #                             cur_edge_weight[idx] /= q
-
-        #             cur = random.choices(
-        #                 cur_neighbor.tolist(), weights=cur_edge_weight.tolist())[0]
-        #         out[n, l] = cur
-        #     if not self.is_unweighted:
-        #         del cur_edge_weight
-        # return out
-
 
 if __name__ == "__main__":
     edge_index = torch.tensor([[0, 1, 1, 2],
@@ -134,5 +103,5 @@ if __name__ == "__main__":
     edge_weight = torch.tensor([1, 0.2, 0.8, 1])
     start = torch.tensor([0, 1, 2])
     data = Data(x=x, edge_index=edge_index)
-    rw = RandomWalk(data, edge_weight=edge_weight)
+    rw = RandomWalk(data, edge_weight=edge_weight, is_parallel=True)
     print(rw.walk(start, walk_length=5, p=0.2, q=0.5))

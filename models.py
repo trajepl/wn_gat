@@ -10,6 +10,7 @@ from torch.utils.checkpoint import checkpoint
 from torch.utils.data import DataLoader
 from torch_geometric.data import Data
 from torch_geometric.nn import Node2Vec, SAGEConv
+from tqdm import tqdm
 
 from layer import GATConv, NEGLoss
 from rw import RandomWalk
@@ -48,9 +49,12 @@ class WNGat(nn.Module):
             **kwargs) -> None:
 
         super(WNGat, self).__init__()
-        self.conv1 = GATConv(in_channels, hidden_channels, heads)
-        self.conv2 = GATConv(hidden_channels*heads, hidden_channels, heads)
-        self.conv3 = GATConv(hidden_channels*heads, out_channels, heads)
+        self.conv1 = GATConv(in_channels, hidden_channels,
+                             heads, dropout=dropout)
+        self.conv2 = GATConv(hidden_channels*heads,
+                             hidden_channels, heads, dropout=dropout)
+        self.conv3 = GATConv(hidden_channels*heads,
+                             out_channels, heads, dropout=dropout)
         self.use_checkpoint = use_checkpoint
 
     def forward(self, inp, edge_index, size=None):
@@ -77,7 +81,7 @@ class WNGat(nn.Module):
         prefix_sav = f'./model_save/WNGat_{train_time}'
         loss_list = []
 
-        super(WNGat, self).train(mode=mode)
+        super().train()
         negloss = NEGLoss(data.x, data.edge_index, n_samples)
         for epoch in range(epoch_s, epoch_e):
             optimizer.zero_grad()
@@ -163,7 +167,8 @@ class WNNode2vec(Node2Vec):
         for epoch in range(epoch_s, epoch_e):
             super().train()
             total_loss = 0
-            for subset in loader:
+            print(f'epoch: {epoch}')
+            for subset in tqdm(loader):
                 optimizer.zero_grad()
                 loss = self.loss(data.edge_index, subset=subset.to(device))
                 loss.backward()
