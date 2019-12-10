@@ -10,28 +10,29 @@ from paraller import ParallerParser
 
 class RandomWalk(object):
     def __init__(self, data: Data, edge_weight: torch.FloatTensor = None,
-                 is_sorted: bool = False, is_parallel: bool = True, reverse: bool = False):
+                 is_parallel: bool = True, reverse: bool = False):
         self.is_unweighted = True
         self.is_parallel = is_parallel
         self.i, self.j = (1, 0) if reverse else (0, 1)
         self.is_unweighted = True if edge_weight is None else False
 
-        if not is_sorted or reverse:
-            _, sorted_edge_idx = torch.sort(data.edge_index)
-            data.edge_index[0] = data.edge_index[0][sorted_edge_idx[self.i]]
-            data.edge_index[1] = data.edge_index[1][sorted_edge_idx[self.i]]
-            if not edge_weight is None:
-                edge_weight = edge_weight[sorted_edge_idx[self.i]]
+        _, sorted_edge_idx = torch.sort(data.edge_index)
+        data.edge_index[0] = data.edge_index[0][sorted_edge_idx[self.i]]
+        data.edge_index[1] = data.edge_index[1][sorted_edge_idx[self.i]]
+        if not edge_weight is None:
+            edge_weight = edge_weight[sorted_edge_idx[self.i]]
 
         self.data = data
         self.edge_weight = edge_weight
         self.deg = self._degree()
-        self.cum_deg = torch.cat(
-            (torch.zeros(1, dtype=torch.long), self.deg.cumsum(0)), 0)
+        self.cum_deg = torch.cat((torch.zeros(
+            1, dtype=torch.long, device=self.data.edge_index.device), self.deg.cumsum(0)), 0)
 
     def _degree(self) -> torch.LongTensor:
-        zero = torch.zeros(self.data.num_nodes, dtype=torch.long)
-        one = torch.ones(self.data.num_edges, dtype=torch.long)
+        zero = torch.zeros(self.data.num_nodes, dtype=torch.long,
+                           device=self.data.edge_index.device)
+        one = torch.ones(self.data.num_edges, dtype=torch.long,
+                         device=self.data.edge_index.device)
         return zero.scatter_add_(0, self.data.edge_index[self.i], one)
 
     def _get_neighbors(self, cur: int) -> Tuple[torch.LongTensor, torch.FloatTensor]:

@@ -95,12 +95,13 @@ class WNGat(nn.Module):
 
 
 class WNNode2vec(Node2Vec):
-    def __init__(self, data, embedding_dim, walk_length, context_size,
+    def __init__(self, data, edge_weight, embedding_dim, walk_length, context_size,
                  walks_per_node=1, p=1, q=1, num_negative_samples=None,
-                 is_parallel=False):
+                 is_parallel=False, reverse=False):
         super(WNNode2vec, self).__init__(data.num_nodes, embedding_dim,
                                          walk_length, context_size, walks_per_node, p, q, num_negative_samples)
-        self.random_walk = RandomWalk(data, is_parallel=is_parallel)
+        self.random_walk = RandomWalk(
+            data, edge_weight, is_parallel=is_parallel, reverse=reverse)
 
     def loss(self, edge_index, edge_weight=None, subset=None):
         r"""Computes the loss for the nodes in :obj:`subset` with negative
@@ -145,7 +146,7 @@ class WNNode2vec(Node2Vec):
         num_walks_per_rw = 1 + self.walk_length + 1 - self.context_size
         for j in range(num_walks_per_rw):
             walks.append(rw[:, j:j + self.context_size])
-        return torch.cat(walks, dim=0)
+        return torch.cat(walks, dim=0).to(edge_index.device)
 
     def train(self,
               epoch_s: int,
@@ -177,7 +178,8 @@ class WNNode2vec(Node2Vec):
                 total_loss += loss.item()
             rls_loss = total_loss / len(loader)
             loss_list.append(rls_loss)
-            oup = self.forward(torch.arange(0, data.num_nodes)).data
+            oup = self.forward(torch.arange(
+                0, data.num_nodes, device=data.edge_index.device)).data
             save_model(epoch, self, optimizer, loss_list, prefix_sav, oup=oup)
 
     '''

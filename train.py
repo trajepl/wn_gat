@@ -25,6 +25,8 @@ parser.add_argument('--resume', action='store_true',
                     default=False, help='Resume training from saved model.')
 parser.add_argument('--is_parallel', action='store_true',
                     default=False, help='Resume training from saved model.')
+parser.add_argument('--reverse', action='store_true',
+                    default=False, help='Revserse the order of sample in randomwalk.')
 parser.add_argument('--data', type=str,
                     default='./data/wn_graph', help='Graph data path.')
 parser.add_argument('--checkpoint_path', type=str,
@@ -63,6 +65,9 @@ args = parser.parse_args()
 args.cuda = not args.no_cuda and torch.cuda.is_available()
 device = torch.device('cuda' if args.cuda else 'cpu')
 
+# # debug
+# device = 'cuda'
+# args.model = 'node2vec'
 # dataset = Planetoid(root='/tmp/Cora', name='Cora')
 # data = dataset[0]
 
@@ -83,11 +88,13 @@ if args.model == 'gat':
                   use_checkpoint=False).to(device)
 elif args.model == 'node2vec':
     model = WNNode2vec(data,
-                     embedding_dim=args.output,
-                     walk_length=args.walk_length,
-                     context_size=args.context_size,
-                     walks_per_node=args.walks_per_node,
-                     is_parallel=args.is_parallel)
+                       edge_weight=None,
+                       embedding_dim=args.output,
+                       walk_length=args.walk_length,
+                       context_size=args.context_size,
+                       walks_per_node=args.walks_per_node,
+                       is_parallel=args.is_parallel,
+                       reverse=args.reverse).to(device)
     params['batch_size'] = args.batch_size
 else:
     pass
