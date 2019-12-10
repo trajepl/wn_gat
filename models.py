@@ -18,7 +18,7 @@ from rw import RandomWalk
 EPS = 1e-15
 
 
-def save_model(epoch, model, optimizer, loss_list, prefix_sav) -> None:
+def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup) -> None:
     model_name = model.__class__.__name__
     print('Epoch: {:03d}, Loss: {:.5f}'.format(epoch, loss_list[-1]))
     if epoch > 0 and (epoch + 1) % 2 == 0:
@@ -30,6 +30,7 @@ def save_model(epoch, model, optimizer, loss_list, prefix_sav) -> None:
             'loss_list': loss_list,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
+            'oup': oup
         }
         torch.save(
             state_dict, f'{prefix_sav}/{epoch+1}.m5')
@@ -90,7 +91,7 @@ class WNGat(nn.Module):
             loss_list.append(loss.data)
             loss.backward()
             optimizer.step()
-            save_model(epoch, self, optimizer, loss_list, prefix_sav)
+            save_model(epoch, self, optimizer, loss_list, prefix_sav, out)
 
 
 class WNNode2vec(Node2Vec):
@@ -176,7 +177,8 @@ class WNNode2vec(Node2Vec):
                 total_loss += loss.item()
             rls_loss = total_loss / len(loader)
             loss_list.append(rls_loss)
-            save_model(epoch, self, optimizer, loss_list, prefix_sav)
+            oup = self.forward(torch.arange(0, data.num_nodes)).data
+            save_model(epoch, self, optimizer, loss_list, prefix_sav, oup=oup)
 
     '''
     def test(self,
