@@ -1,26 +1,27 @@
-import torch
 import random
 from copy import deepcopy
 from typing import Tuple
+
+import torch
 from torch_geometric.data import Data
+
 from paraller import ParallerParser
 
 
 class RandomWalk(object):
     def __init__(self, data: Data, edge_weight: torch.FloatTensor = None,
-                 is_sorted: bool = False, is_parallel: bool = True):
+                 is_sorted: bool = False, is_parallel: bool = True, reverse: bool = False):
         self.is_unweighted = True
         self.is_parallel = is_parallel
+        self.i, self.j = (1, 0) if reverse else (0, 1)
+        self.is_unweighted = True if edge_weight is None else False
 
-        if not is_sorted:
-            edge_list = data.edge_index.tolist()
+        if not is_sorted or reverse:
+            _, sorted_edge_idx = torch.sort(data.edge_index)
+            data.edge_index[0] = data.edge_index[0][sorted_edge_idx[self.i]]
+            data.edge_index[1] = data.edge_index[1][sorted_edge_idx[self.i]]
             if not edge_weight is None:
-                self.is_unweighted = False
-                edge_list.append(edge_weight)
-            sorted(edge_list, key=lambda x: x[0])
-            data.edge_index = torch.LongTensor(edge_list[:2])
-            if not edge_weight is None:
-                edge_weight = torch.FloatTensor(edge_list[-1])
+                edge_weight = edge_weight[sorted_edge_idx[self.i]]
 
         self.data = data
         self.edge_weight = edge_weight
@@ -31,11 +32,11 @@ class RandomWalk(object):
     def _degree(self) -> torch.LongTensor:
         zero = torch.zeros(self.data.num_nodes, dtype=torch.long)
         one = torch.ones(self.data.num_edges, dtype=torch.long)
-        return zero.scatter_add_(0, self.data.edge_index[0], one)
+        return zero.scatter_add_(0, self.data.edge_index[self.i], one)
 
     def _get_neighbors(self, cur: int) -> Tuple[torch.LongTensor, torch.FloatTensor]:
         nl, nr = self.cum_deg[cur], self.deg[cur]
-        cur_neighbor = self.data.edge_index[1, nl:nl+nr]
+        cur_neighbor = self.data.edge_index[self.j, nl:nl+nr]
         cur_edge_weight = None
         if not self.is_unweighted:
             cur_edge_weight = deepcopy(self.edge_weight[nl:nl+nr])
@@ -97,11 +98,12 @@ class RandomWalk(object):
 
 
 if __name__ == "__main__":
-    edge_index = torch.tensor([[0, 1, 1, 2],
-                               [1, 0, 2, 1]], dtype=torch.long)
+    edge_index = torch.tensor([[0, 1, 1],
+                               [1, 0, 2]], dtype=torch.long)
     x = torch.tensor([[-1], [0], [1]], dtype=torch.float)
-    edge_weight = torch.tensor([1, 0.2, 0.8, 1])
+    edge_weight = torch.tensor([1, 0.2, 0.8])
     start = torch.tensor([0, 1, 2])
     data = Data(x=x, edge_index=edge_index)
-    rw = RandomWalk(data, edge_weight=edge_weight, is_parallel=True)
+    rw = RandomWalk(data, edge_weight=edge_weight,
+                    is_parallel=False, reverse=True)
     print(rw.walk(start, walk_length=5, p=0.2, q=0.5))
