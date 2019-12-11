@@ -23,6 +23,5 @@ python train.py --no_cuda \
                 --n_samples 5 \
                 --n_heads 8 \
                 --dropout 0.75 \
-                --alpha 0.2 \
                 1>gat_log.txt 2>&1 &
 

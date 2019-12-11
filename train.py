@@ -52,8 +52,8 @@ parser.add_argument('--n_heads', type=int, default=8,
                     help='Number of head attentions.')
 parser.add_argument('--dropout', type=float, default=0.6,
                     help='Dropout rate (1 - keep probability).')
-parser.add_argument('--alpha', type=float, default=0.2,
-                    help='Alpha for the leaky_relu.')
+# parser.add_argument('--alpha', type=float, default=0.2,
+#                     help='Alpha for the leaky_relu.')
 parser.add_argument('--walk_length', type=int, default=20,
                     help='Number of head attentions.')
 parser.add_argument('--context_size', type=int, default=10,

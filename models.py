@@ -73,7 +73,7 @@ class WNGat(nn.Module):
     def train(self,
               epoch_s: int,
               epoch_e: int,
-              data: torch_geometric.data.Data,
+              data: Data,
               n_samples: int,
               optimizer: torch.optim,
               mode: bool = True) -> None:
@@ -151,7 +151,7 @@ class WNNode2vec(Node2Vec):
     def train(self,
               epoch_s: int,
               epoch_e: int,
-              data: torch_geometric.data.Data,
+              data: Data,
               n_samples: int,
               optimizer: torch.optim,
               device: str,
