@@ -21,7 +21,7 @@ EPS = 1e-15
 def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup) -> None:
     model_name = model.__class__.__name__
     print('Epoch: {:03d}, Loss: {:.5f}'.format(epoch, loss_list[-1]))
-    if epoch > 0 and (epoch + 1) % 2 == 0:
+    if epoch > 0 and (epoch + 1) % 10 == 0:
         if not os.path.exists(prefix_sav):
             os.makedirs(prefix_sav)
 
