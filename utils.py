@@ -56,8 +56,8 @@ def _load_dictionary(dictionary: str):
     return wn_dict
 
 
-def load_data(base_folder: str) -> List[Any]:
-    wn_dict = _load_dictionary(DICTIONARY)
+def load_data(base_folder: str, dictionary: str = DICTIONARY) -> List[Any]:
+    wn_dict = _load_dictionary(dictionary)
     word_vec = [None] * wn_dict.size()
 
     vec_model = ModelLoad('glove', GLOVE_VEC)

@@ -29,6 +29,8 @@ parser.add_argument('--reverse', action='store_true',
                     default=False, help='Revserse the order of sample in randomwalk.')
 parser.add_argument('--data', type=str,
                     default='./data/wn_graph', help='Graph data path.')
+parser.add_argument('--dictionary', type=str,
+                    default='./data/dictionary', help='Graph data path.')
 parser.add_argument('--checkpoint_path', type=str,
                     default='', help='Checkpoint path for resuming.')
 parser.add_argument('--model', type=str, default='node2vec',
@@ -71,7 +73,7 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 # dataset = Planetoid(root='/tmp/Cora', name='Cora')
 # data = dataset[0]
 
-x, x_i, x_j = load_data(args.data)
+x, x_i, x_j = load_data(args.data, args.dictionary)
 edge_index = torch.tensor([x_i, x_j], dtype=torch.long)
 x = torch.tensor(x, dtype=torch.float)
 data = Data(x=x, edge_index=edge_index)
