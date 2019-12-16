@@ -14,11 +14,14 @@ from tqdm import tqdm
 
 from layer import GATConv, NEGLoss
 from rw import RandomWalk
+from sr_eval.utils import read_vec, sr_ouput
+from sr_eval.metric import cosine
+from word_mapping import synsets
 
 EPS = 1e-15
 
 
-def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup) -> None:
+def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup, sr) -> None:
     model_name = model.__class__.__name__
     print('Epoch: {:03d}, Loss: {:.5f}'.format(epoch, loss_list[-1]))
     if epoch > 0 and (epoch + 1) % 10 == 0:
@@ -30,7 +33,8 @@ def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup) -> None:
             'loss_list': loss_list,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'oup': oup
+            'oup': oup,
+            'sr': sr_rls
         }
         torch.save(
             state_dict, f'{prefix_sav}/{epoch+1}.m5')
@@ -154,7 +158,8 @@ class WNNode2vec(Node2Vec):
               data: Data,
               n_samples: int,
               optimizer: torch.optim,
-              device: str,
+              device: torch.device,
+              sr_golden_data: str,
               mode: bool = True,
               batch_size: int = 256) -> None:
 
@@ -177,20 +182,43 @@ class WNNode2vec(Node2Vec):
                 optimizer.step()
                 total_loss += loss.item()
             rls_loss = total_loss / len(loader)
+            sr_rls = self.sr_test(sr_golden_data, device)
             loss_list.append(rls_loss)
             oup = self.forward(torch.arange(
                 0, data.num_nodes, device=data.edge_index.device)).data
-            save_model(epoch, self, optimizer, loss_list, prefix_sav, oup=oup)
+            save_model(epoch, self, optimizer, loss_list,
+                       prefix_sav, oup=oup, sr=sr_rls)
 
-    '''
-    def test(self,
-             data: torch_geometric.data.Data,
-             device: str) -> None:
+    def sr_score(self, w1: str, w2: str, device: torch.device, strategy: str = 'max') -> torch.Tensor:
+        w1_synsets, w2_synsets = synsets(w1).to(device), synsets(w2).to(device)
+        w1_synsets_vec, w2_synsets_vec = self.embedding(
+            w1_synsets).to(device), self.embedding(w2_synsets).to(device)
 
-        super().eval()
-        with torch.no_grad():
-            z = self.forward(torch.arange(data.num_nodes, device=device))
-        acc = super().test(z[data.train_mask], data.y[data.train_mask],
-                           z[data.test_mask], data.y[data.test_mask], max_iter=150)
-        return acc
-    '''
+        if device.type.startswith('cuda'):
+            w1_synsets_vec, w2_synsets_vec = w1_synsets_vec.cpu(), w2_synsets_vec.cpu()
+        w1_synsets_vec, w2_synsets_vec = w1_synsets_vec.detach(
+        ).numpy(), w2_synsets_vec.detach().numpy()
+
+        rls = 0
+        for i in w1_synsets_vec:
+            for j in w2_synsets_vec:
+                ij_score = cosine(i, j)
+                if strategy == 'max':
+                    rls = max(rls, ij_score)
+                elif strategy == 'mean':
+                    rls += ij_score
+        return rls / (len(w1_synsets_vec) * len(w2_synsets_vec)) if strategy == 'mean' else rls
+
+    def sr_test(self, sr_golden_data: str, device: torch.device, csep: str = ';') -> None:
+        rls = []
+        for fnt in os.listdir(sr_golden_data):
+            if not fnt.endswith('.csv'):
+                continue
+            fn = os.path.join(sr_golden_data, fnt)
+            golden_words, golden_score = read_vec(fn)
+            test_score = []
+            for word_pair in golden_words:
+                w1, w2 = word_pair[0], word_pair[1]
+                test_score.append(self.sr_score(w1, w2, device).tolist())
+            rls.append(sr_ouput(fnt, golden_score, test_score))
+        return rls
