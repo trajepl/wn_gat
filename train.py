@@ -29,8 +29,6 @@ parser.add_argument('--reverse', action='store_true',
                     default=False, help='Revserse the order of sample in randomwalk.')
 parser.add_argument('--data', type=str,
                     default='./data/wordnet/edge/synsets', help='Graph data path.')
-parser.add_argument('--sr_golden_data', type=str,
-                    default='./sr_eval/golden/', help='SR Golden data path.')
 parser.add_argument('--dictionary', type=str,
                     default='./data/dictionary', help='Graph data path.')
 parser.add_argument('--checkpoint_path', type=str,
@@ -117,5 +115,4 @@ if args.resume:
     loss_list = ckp['loss_list']
 
 model.train(epoch_start, args.epochs+epoch_start,
-            data, args.n_samples, optimizer, device,
-            args.sr_golden_data, **params)
+            data, args.n_samples, optimizer, device, **params)
