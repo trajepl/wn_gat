@@ -68,8 +68,8 @@ class WNGat(nn.Module):
             oup = F.elu(checkpoint(self.conv3, h2, edge_index))
         else:
             h1 = F.elu(self.conv1(inp, edge_index))
-            h2 = F.elu(self.conv2(h1, edge_index))
-            oup = F.elu(self.conv3(h2, edge_index))
+            # h2 = F.elu(self.conv2(h1, edge_index))
+            oup = F.elu(self.conv3(h1, edge_index))
         return oup
 
     def emb(self, subset, oup: torch.Tensor = None):
@@ -191,7 +191,7 @@ class WNNode2vec(Node2Vec):
                 total_loss += loss.item()
                 total_loss = 0
             rls_loss = total_loss / len(loader)
-            sr_rls = sr_test(self, device, self.forward, strategy)
+            sr_rls = sr_test(device, self.forward, strategy)
             loss_list.append(rls_loss)
             oup = self.forward(torch.arange(
                 0, data.num_nodes, device=data.edge_index.device)).data

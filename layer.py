@@ -105,15 +105,13 @@ class NEGLoss(nn.Module):
         neg_edge_index = self.neg_edge_index
         v_i = x[edge_index[0]]
         nei_v_i = x[edge_index[1]]
-        aff = torch.sum(v_i.mul(nei_v_i), dim=1, dtype=torch.float)
-        true_aff = self.bce_loss_with_logits(aff, torch.ones_like(aff))
+        pos = torch.sum(v_i.mul(nei_v_i), dim=1, dtype=torch.float)
 
-        tv_i = v_i.repeat(1, self.num_negative_samples).view(-1,
-                                                             self.num_negative_samples, v_i.size(1))
+        tv_i = v_i.repeat(1, self.num_negative_samples).view(-1, v_i.size(1))
         neg_v_i = x[torch.transpose(
-            neg_edge_index, 1, 0)].view(-1, self.num_negative_samples, v_i.size(1))
-        neg_loss = torch.sum(torch.sum(torch.mul(tv_i, neg_v_i), dim=2), dim=1)
-        neg_loss = self.bce_loss_with_logits(neg_loss, torch.zeros_like(aff))
+            neg_edge_index, 1, 0)].view(-1, v_i.size(1))
+        neg = torch.sum(torch.mul(tv_i, neg_v_i), dim=1)
 
-        loss = (torch.sum(true_aff) + torch.sum(neg_loss)) / edge_index.size(0)
+        loss = self.bce_loss_with_logits(torch.cat((pos, neg)), torch.cat(
+            (torch.ones_like(pos), torch.zeros_like(neg))))
         return loss
