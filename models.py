@@ -89,8 +89,6 @@ class WNGat(nn.Module):
         prefix_sav = f'./model_save/WNGat_{train_time}'
         loss_list = []
 
-        
-
         super().train()
         negloss = NEGLoss(data.x, data.edge_index, n_samples)
         for epoch in range(epoch_s, epoch_e):
@@ -189,10 +187,9 @@ class WNNode2vec(Node2Vec):
                 loss.backward()
                 optimizer.step()
                 total_loss += loss.item()
-                total_loss = 0
             rls_loss = total_loss / len(loader)
-            sr_rls = sr_test(device, self.forward, strategy)
             loss_list.append(rls_loss)
+            sr_rls = sr_test(device, self.forward, strategy)
             oup = self.forward(torch.arange(
                 0, data.num_nodes, device=data.edge_index.device)).data
             save_model(epoch, self, optimizer, loss_list,

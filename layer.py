@@ -107,9 +107,9 @@ class NEGLoss(nn.Module):
         nei_v_i = x[edge_index[1]]
         pos = torch.sum(v_i.mul(nei_v_i), dim=1, dtype=torch.float)
 
-        tv_i = v_i.repeat(1, self.num_negative_samples).view(-1, v_i.size(1))
+        tv_i = v_i.repeat(1, self.num_negative_samples).reshape(-1, v_i.size(1))
         neg_v_i = x[torch.transpose(
-            neg_edge_index, 1, 0)].view(-1, v_i.size(1))
+            neg_edge_index, 1, 0)].reshape(-1, v_i.size(1))
         neg = torch.sum(torch.mul(tv_i, neg_v_i), dim=1)
 
         loss = self.bce_loss_with_logits(torch.cat((pos, neg)), torch.cat(
