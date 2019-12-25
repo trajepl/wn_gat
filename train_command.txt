@@ -3,25 +3,28 @@ python train.py --no_cuda \
                 --model node2vec \
                 --batch_size 256 \
                 --epochs 1000 \
-                --lr 0.01 \
-                --weight_decay 0 \
+                --lr 0.001 \
+                --weight_decay 0.0005 \
                 --output 256 \
-                --walk_length 20 \
+                --walk_length 50 \
                 --context_size 10 \
                 --walks_per_node 10 \
                 --is_parallel \
+                --data ./data/wordnet/edge/synsets \
+                --dictionary ./data/wordnet/dictionary/synsets.txt \
                 1>node2vec_log.txt 2>&1 &
 
 # gat
 python train.py --no_cuda \
                 --model gat \
-                --epochs 1000 \
+                --epochs 500 \
                 --lr 0.01 \
                 --weight_decay 0 \
                 --output 256 \
                 --hidden 256 \
                 --n_samples 5 \
-                --n_heads 8 \
+                --n_heads 4 \
                 --dropout 0.75 \
+                --data ./data/wordnet/edge/synsets \
                 1>gat_log.txt 2>&1 &
 

@@ -10,15 +10,14 @@ from sr_eval import metric
 from word_mapping import synsets
 
 DICT_PATH = './data/dictionary'
-EMB_KEY = 'oup'
 SR_GOLDEN_DATA = './sr_eval/golden/'
 
 
 def sr_ouput(fn: str, A: List, B: List) -> float:
     rls_spearman = metric.spearman(A, B)
     rls_pearson = metric.pearson(A, B)
-    print(fn + ':')
-    print('\tspearman:{:.3f}'.format(rls_spearman))
+    print(fn + ':', end='')
+    print('\tspearman:{:.3f}'.format(rls_spearman), end='')
     print('\tpearson:{:.3f}'.format(rls_pearson))
     return rls_spearman, rls_pearson
 
@@ -77,6 +76,6 @@ def sr_test(device: torch.device,
         for word_pair in golden_words:
             w1, w2 = word_pair[0], word_pair[1]
             test_score.append(
-                sr_score(w1, w2, device, func, strategy, **params).tolist())
+                sr_score(w1, w2, device, func, strategy, **params))
         rls.append(sr_ouput(fnt, golden_score, test_score))
     return rls

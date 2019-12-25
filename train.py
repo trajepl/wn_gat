@@ -19,43 +19,49 @@ from models import WNGat, WNNode2vec
 from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
-parser.add_argument('--no_cuda', action='store_true',
-                    default=False, help='Disables CUDA training.')
-parser.add_argument('--resume', action='store_true',
-                    default=False, help='Resume training from saved model.')
-parser.add_argument('--is_parallel', action='store_true',
-                    default=False, help='Resume training from saved model.')
-parser.add_argument('--reverse', action='store_true',
-                    default=False, help='Revserse the order of sample in randomwalk.')
-parser.add_argument('--data', type=str,
-                    default='./data/wordnet/edge/synsets', help='Graph data path.')
-parser.add_argument('--dictionary', type=str,
-                    default='./data/dictionary', help='Graph data path.')
-parser.add_argument('--checkpoint_path', type=str,
-                    default='', help='Checkpoint path for resuming.')
-parser.add_argument('--model', type=str, default='node2vec',
+# general
+parser.add_argument('--no_cuda', action='store_true', default=False,
+                    help='Disables CUDA training.')
+parser.add_argument('--resume', action='store_true', default=False,
+                    help='Resume training from saved model.')
+parser.add_argument('--data', type=str, default='./data/wordnet/edge/synsets',
+                    help='Graph edge path.')
+parser.add_argument('--dictionary', type=str, default='./data/wordnet/dictionary/synsets.txt',
+                    help='Graph node dictionary path.')
+parser.add_argument('--checkpoint_path', type=str, default='',
+                    help='Checkpoint path for resuming.')
+parser.add_argument('--model', type=str, default='gat',
                     help='Gnn model.')
-parser.add_argument('--batch_size', type=int, default=128,
-                    help='Batch size for some model such as Node2vec, GraphSage.')
-parser.add_argument('--seed', type=int, default=2019, help='Random seed.')
+parser.add_argument('--seed', type=int, default=2019,
+                    help='Random seed.')
 parser.add_argument('--epochs', type=int, default=1000,
                     help='Number of epochs to train.')
 parser.add_argument('--lr', type=float, default=0.01,
                     help='Initial learning rate.')
 parser.add_argument('--weight_decay', type=float, default=0,
                     help='Weight decay (L2 loss on parameters).')
-parser.add_argument('--hidden', type=int, default=256,
-                    help='Hidden channels.')
 parser.add_argument('--output', type=int, default=128,
                     help='Output channels.')
+
+# gat
+parser.add_argument('--hidden', type=int, default=256,
+                    help='Hidden channels.')
 parser.add_argument('--n_samples', type=int, default=5,
                     help='Number of negitive sampling.')
-parser.add_argument('--n_heads', type=int, default=8,
+parser.add_argument('--n_heads', type=int, default=2,
                     help='Number of head attentions.')
 parser.add_argument('--dropout', type=float, default=0.6,
                     help='Dropout rate (1 - keep probability).')
 # parser.add_argument('--alpha', type=float, default=0.2,
 #                     help='Alpha for the leaky_relu.')
+
+# node2vec
+parser.add_argument('--is_parallel', action='store_true', default=False,
+                    help='Resume training from saved model.')
+parser.add_argument('--reverse', action='store_true', default=False,
+                    help='Revserse the order of sample in randomwalk.')
+parser.add_argument('--batch_size', type=int, default=128,
+                    help='Batch size for some model such as Node2vec.')
 parser.add_argument('--walk_length', type=int, default=20,
                     help='Number of head attentions.')
 parser.add_argument('--context_size', type=int, default=10,
@@ -73,7 +79,7 @@ device = torch.device('cuda' if args.cuda else 'cpu')
 # dataset = Planetoid(root='/tmp/Cora', name='Cora')
 # data = dataset[0]
 
-x, x_i, x_j = load_data(args.data, args.dictionary)
+x, x_i, x_j = load_data(args.data, args.dictionary, model_name=args.model)
 edge_index = torch.tensor([x_i, x_j], dtype=torch.long)
 x = torch.tensor(x, dtype=torch.float)
 data = Data(x=x, edge_index=edge_index)

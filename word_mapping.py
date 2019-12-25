@@ -17,7 +17,18 @@ def to_str(synset_object):
     return rls
 
 
-def synsets(w1: str, synsets_path: str = SYNSETS_PATH) -> torch.Tensor:
+def lemmas_name(synset: str) -> List[str]:
+    rls = []
+    raw_rls = [item.name() for item in wn.synset(synset).lemmas()]
+    for item in raw_rls:
+        if '_' in item:
+            rls += [word.lower() for word in item.split('_')]
+        else:
+            rls.append(item.lower())
+    return rls
+
+
+def synsets(w1: str) -> torch.Tensor:
     rls = []
     synsets_list = wn.synsets(w1)
     for synset in synsets_list:

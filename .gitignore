@@ -133,3 +133,5 @@ data/_handle.py
 model_save/
 
 t_*/
+*_log.txt
+data/wordnet/node/*

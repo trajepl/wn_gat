@@ -19,7 +19,7 @@ class ModelLoad():
             with open(self.model_path, 'r') as fin:
                 for line in tqdm(fin.readlines()):
                     line = line.split()
-                    word = line[0]
+                    word = line[0].lower()
                     embedding = np.array([float(val) for val in line[1:]])
                     self.model[word] = embedding
             print('Done.', len(self.model), 'words loaded!')
