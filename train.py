@@ -15,7 +15,7 @@ from torch.autograd import Variable
 from torch_geometric.data import Data
 from torch_geometric.datasets import Planetoid
 
-from models import WNGat, WNNode2vec
+from models import WNGat, WNGraphSage, WNNode2vec
 from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
@@ -43,7 +43,7 @@ parser.add_argument('--weight_decay', type=float, default=0,
 parser.add_argument('--output', type=int, default=128,
                     help='Output channels.')
 
-# gat
+# gat | graphsage
 parser.add_argument('--hidden', type=int, default=256,
                     help='Hidden channels.')
 parser.add_argument('--n_samples', type=int, default=5,
@@ -94,6 +94,10 @@ if args.model == 'gat':
                   heads=args.n_heads,
                   dropout=args.dropout,
                   use_checkpoint=False).to(device)
+elif args.model == 'graphsage':
+    model = WNGraphSage(data.num_node_features,
+                        hidden_channels=args.hidden,
+                        out_channels=args.output).to(device)
 elif args.model == 'node2vec':
     model = WNNode2vec(data,
                        edge_weight=None,

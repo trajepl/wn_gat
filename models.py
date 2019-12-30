@@ -194,3 +194,56 @@ class WNNode2vec(Node2Vec):
                 0, data.num_nodes, device=data.edge_index.device)).data
             save_model(epoch, self, optimizer, loss_list,
                        prefix_sav, oup=oup, sr=sr_rls)
+
+
+class WNGraphSage(nn.Module):
+    def __init__(
+            self,
+            in_channels: int,
+            hidden_channels: int,
+            out_channels: int,
+            normalize: bool = True,
+            bias: bool = True,
+            **kwargs) -> None:
+
+        super(WNGraphSage, self).__init__()
+        self.sage_conv1 = SAGEConv(
+            in_channels, hidden_channels, normalize, bias, **kwargs)
+        self.sage_conv2 = SAGEConv(
+            hidden_channels, out_channels, normalize, bias, **kwargs)
+
+    def forward(self, inp, edge_index, size=None):
+        h1 = self.sage_conv1(inp, edge_index)
+        oup = self.sage_conv2(h1, edge_index)
+        return oup
+
+    def emb(self, subset, oup: torch.Tensor = None):
+        return oup[subset]
+
+    def train(self,
+              epoch_s: int,
+              epoch_e: int,
+              data: Data,
+              n_samples: int,
+              optimizer: torch.optim,
+              device: torch.device,
+              strategy: str = 'max',
+              mode: bool = True) -> None:
+
+        train_time = time.time()
+        prefix_sav = f'./model_save/WNGraphSage_{train_time}'
+        loss_list = []
+
+        super().train()
+        negloss = NEGLoss(data.x, data.edge_index, n_samples)
+        for epoch in range(epoch_s, epoch_e):
+            optimizer.zero_grad()
+            oup = self.forward(data.x, data.edge_index)
+            loss = negloss(oup, data.edge_index)
+            loss_list.append(loss.data)
+            loss.backward()
+            optimizer.step()
+            sr_params = {'oup': oup}
+            sr_rls = sr_test(device, self.emb, strategy, **sr_params)
+            save_model(epoch, self, optimizer, loss_list,
+                       prefix_sav, oup, sr=sr_rls)

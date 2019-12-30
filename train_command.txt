@@ -28,3 +28,14 @@ python train.py --no_cuda \
                 --data ./data/wordnet/edge/synsets \
                 1>gat_log.txt 2>&1 &
 
+# graphsage
+python train.py --no_cuda \
+                --model graphsage \
+                --epochs 500 \
+                --lr 0.01 \
+                --weight_decay 0 \
+                --output 256 \
+                --hidden 256 \
+                --n_samples 5 \
+                --data ./data/wordnet/edge/synsets \
+                1>gat_log.txt 2>&1 &
