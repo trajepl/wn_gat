@@ -10,7 +10,7 @@ def cosine(A, B) -> float:
     '''
     num = np.dot(A, B)
     denom = np.linalg.norm(A) * np.linalg.norm(B)
-    cos = num / denom
+    cos = num / denom if denom != 0 else -1
     # 归一化
     return 0.5 + 0.5 * cos
 

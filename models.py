@@ -18,24 +18,30 @@ from sr_eval.utils import sr_test
 
 EPS = 1e-15
 
+SR_BST = [0, 0]
+SAVE_NAME = ['max', 'mean']
 
 def save_model(epoch, model, optimizer, loss_list, prefix_sav, oup, sr) -> None:
     model_name = model.__class__.__name__
     print('Epoch: {:03d}, Loss: {:.5f}'.format(epoch, loss_list[-1]))
-    if epoch > 0 and (epoch + 1) % 10 == 0:
-        if not os.path.exists(prefix_sav):
-            os.makedirs(prefix_sav)
+    if not os.path.exists(prefix_sav):
+        os.makedirs(prefix_sav)
 
-        state_dict = {
-            'epoch': epoch+1,
-            'loss_list': loss_list,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-            'oup': oup,
-            'sr': sr
-        }
-        torch.save(
-            state_dict, f'{prefix_sav}/{epoch+1}.m5')
+    for idx, item in enumerate(sr):
+        for idy, scores in enumerate(item):
+            if SR_BST[idx] < scores[0]:
+                SR_BST[idx] = scores[0]
+                state_dict = {
+                    'epoch': epoch+1,
+                    'loss_list': loss_list,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'oup': oup,
+                    'sr': sr
+                }
+                torch.save(
+                    state_dict, f'{prefix_sav}/{SAVE_NAME[idx]}.m5')
+                continue
 
 
 class WNGat(nn.Module):
@@ -53,11 +59,11 @@ class WNGat(nn.Module):
 
         super(WNGat, self).__init__()
         self.conv1 = GATConv(in_channels, hidden_channels,
-                             heads, dropout=dropout)
+                             heads, dropout=dropout, concat=True)
         self.conv2 = GATConv(hidden_channels*heads,
                              hidden_channels, heads, dropout=dropout)
         self.conv3 = GATConv(hidden_channels*heads,
-                             out_channels, heads, dropout=dropout)
+                             out_channels, heads, dropout=dropout, concat=False)
         self.use_checkpoint = use_checkpoint
 
     def forward(self, inp, edge_index, size=None):

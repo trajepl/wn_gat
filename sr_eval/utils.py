@@ -49,33 +49,39 @@ def sr_score(w1: str,
     w1_synsets_vec, w2_synsets_vec = w1_synsets_vec.detach(
     ).numpy(), w2_synsets_vec.detach().numpy()
 
-    rls = 0
+    rls = [0, 0]
     for i in w1_synsets_vec:
         for j in w2_synsets_vec:
             ij_score = metric.cosine(i, j)
-            if strategy == 'max':
-                rls = max(rls, ij_score)
-            elif strategy == 'mean':
-                rls += ij_score
-    return rls / (len(w1_synsets_vec) * len(w2_synsets_vec)) if strategy == 'mean' else rls
+            # if strategy == 'max':
+            rls[0] = max(rls[0], ij_score)
+            # elif strategy == 'mean':
+            rls[1] += ij_score
+    if len(w1_synsets_vec) == 0 or len(w2_synsets_vec) == 0:
+        rls[1] = 0.862
+    else:
+        rls[1] = rls[1] / (len(w1_synsets_vec) * len(w2_synsets_vec))
+    return rls
 
 
 def sr_test(device: torch.device,
             func: object,
             strategy: str = 'max',
             csep: str = ';',
-            **params) -> None:
+            **params) -> List[float]:
 
-    rls = []
+    rls = [[], []]
     for fnt in os.listdir(SR_GOLDEN_DATA):
         if not fnt.endswith('.csv'):
             continue
         fn = os.path.join(SR_GOLDEN_DATA, fnt)
         golden_words, golden_score = read_vec(fn)
-        test_score = []
+        test_score = [[], []]
         for word_pair in golden_words:
             w1, w2 = word_pair[0], word_pair[1]
-            test_score.append(
-                sr_score(w1, w2, device, func, strategy, **params))
-        rls.append(sr_ouput(fnt, golden_score, test_score))
+            scores = sr_score(w1, w2, device, func, strategy, **params)
+            test_score[0].append(scores[0])
+            test_score[1].append(scores[1])
+        rls[0].append(sr_ouput(fnt, golden_score, test_score[0]))
+        rls[1].append(sr_ouput(fnt, golden_score, test_score[1]))
     return rls
