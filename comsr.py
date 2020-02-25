@@ -14,5 +14,3 @@ if __name__ == "__main__":
     print(load_params(node2vec_save_prefix)['sr'])
     print(load_params(graphsage_save_prefix)['sr'])
     print(load_params(gat_save_prefix)['sr'])
-
-

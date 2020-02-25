@@ -14,7 +14,7 @@ from tqdm import tqdm
 
 from layer import GATConv, NEGLoss
 from rw import RandomWalk
-from sr_eval.utils import sr_test
+from sr_eval.utils import sr_test, sr_eval
 
 EPS = 1e-15
 
@@ -102,12 +102,19 @@ class WNGat(nn.Module):
             oup = self.forward(data.x, data.edge_index)
             loss = negloss(oup, data.edge_index)
             loss_list.append(loss.data)
-            loss.backward()
-            optimizer.step()
+            
             sr_params = {'oup': oup}
             sr_rls = sr_test(device, self.emb, strategy, **sr_params)
             save_model(epoch, self, optimizer, loss_list,
                        prefix_sav, oup, sr=sr_rls)
+
+            loss.backward()
+            optimizer.step()
+
+    def sr_eval(self, device, data):
+        oup = self.forward(data.x, data.edge_index)
+        sr_params = {'oup': oup}
+        print(sr_eval(device, self.emb, **sr_params))
 
 
 class WNNode2vec(Node2Vec):
@@ -247,9 +254,16 @@ class WNGraphSage(nn.Module):
             oup = self.forward(data.x, data.edge_index)
             loss = negloss(oup, data.edge_index)
             loss_list.append(loss.data)
-            loss.backward()
-            optimizer.step()
+            
             sr_params = {'oup': oup}
             sr_rls = sr_test(device, self.emb, strategy, **sr_params)
             save_model(epoch, self, optimizer, loss_list,
                        prefix_sav, oup, sr=sr_rls)
+
+            loss.backward()
+            optimizer.step()
+
+    def sr_eval(self, device, data):
+        oup = self.forward(data.x, data.edge_index)
+        sr_params = {'oup': oup}
+        print(sr_eval(device, self.emb, **sr_params))

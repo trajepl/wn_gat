@@ -20,6 +20,9 @@ from utils import load_data
 
 parser = argparse.ArgumentParser(description='Wordnet gat training script.')
 # general
+
+parser.add_argument('--eval', action='store_true', default=False,
+                    help='load model params for sr eval.')
 parser.add_argument('--no_cuda', action='store_true', default=False,
                     help='Disables CUDA training.')
 parser.add_argument('--resume', action='store_true', default=False,
@@ -124,5 +127,8 @@ if args.resume:
     epoch_start = ckp['epoch']
     loss_list = ckp['loss_list']
 
-model.train(epoch_start, args.epochs+epoch_start,
-            data, args.n_samples, optimizer, device, **params)
+if args.eval:
+    model.sr_eval(device, data)
+else:
+    model.train(epoch_start, args.epochs+epoch_start,
+                data, args.n_samples, optimizer, device, **params)

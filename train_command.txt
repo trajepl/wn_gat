@@ -3,7 +3,7 @@ python train.py --no_cuda \
                 --model node2vec \
                 --batch_size 256 \
                 --epochs 1000 \
-                --lr 0.001 \
+                --lr 0.01 \
                 --weight_decay 0.0005 \
                 --output 256 \
                 --walk_length 50 \
@@ -12,6 +12,8 @@ python train.py --no_cuda \
                 --is_parallel \
                 --data ./data/wordnet/edge/synsets \
                 --dictionary ./data/wordnet/dictionary/synsets.txt \
+                --eval --resume \
+                --checkpoint_path model_save/WNNode2vec_1582269659.648949/max.m5 \
                 1>node2vec_log.txt 2>&1 &
 
 # gat
@@ -26,6 +28,8 @@ python train.py --no_cuda \
                 --n_heads 4 \
                 --dropout 0.75 \
                 --data ./data/wordnet/edge/synsets \
+                --eval --resume \
+                --checkpoint_path ./model_save/WNGat_1582622232.353988/max.m5 \
                 1>gat_log.txt 2>&1 &
 
 # graphsage
@@ -38,4 +42,6 @@ python train.py --no_cuda \
                 --hidden 256 \
                 --n_samples 5 \
                 --data ./data/wordnet/edge/synsets \
+                --eval --resume \
+                --checkpoint_path ./model_save/WNGraphSage_1582622300.2868683/max.m5 \
                 1>gat_log.txt 2>&1 &
